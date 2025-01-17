@@ -64,7 +64,9 @@ async fn serve_captcha(
     specular_map: ImageBuffer<Rgba<u8>, Vec<u8>>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     // Render
+    let perf_render = std::time::Instant::now();
     let color_buffer = render(model, texture, normal_map, specular_map);
+    println!("Render time: {:?}", perf_render.elapsed());
 
     // Convert the image to PNG bytes
     let mut buf = std::io::Cursor::new(Vec::new());

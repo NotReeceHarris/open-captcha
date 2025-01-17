@@ -1091,8 +1091,11 @@ dependencies = [
  "image",
  "nalgebra",
  "obj-rs",
+ "parking_lot",
+ "rayon",
  "tokio",
  "warp",
+ "wide",
 ]
 
 [[package]]
