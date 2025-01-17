@@ -11,7 +11,7 @@ use warp::Filter;
 
 #[tokio::main]
 async fn main() {
-    let assets_dir = Path::new("assets/african_head")
+    let assets_dir = Path::new("assets/barrel")
         .canonicalize()
         .unwrap_or_else(|_| panic!("Wrong path for assets directory!"));
 

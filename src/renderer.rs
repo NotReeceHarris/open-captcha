@@ -159,7 +159,7 @@ pub fn render(
 
     // Camera configuration
     let camera = Camera {
-        position: Point3::new(0., 0., 1.),
+        position: Point3::new(0., 0., 2.2),
         focal_length: 3.,
         view_point: model_pos,
     };
