@@ -1,39 +1,81 @@
-#![allow(non_snake_case)]
+mod renderer;
 
-#[macro_use]
-extern crate derive_builder;
+use image::{ImageBuffer, Rgba};
+use obj::{load_obj, Obj, TexturedVertex};
+use renderer::render;
+use std::fs::File;
+use std::io::BufReader;
+use std::path::Path;
+use std::sync::Arc;
+use warp::Filter;
 
-pub mod math;
-pub mod parsing;
-pub mod plane_buffer;
-pub mod ui;
-pub mod visual;
-pub mod wavefront;
+#[tokio::main]
+async fn main() {
+    let assets_dir = Path::new("assets/african_head")
+        .canonicalize()
+        .unwrap_or_else(|_| panic!("Wrong path for assets directory!"));
 
-use ui::render_window::render_window::open_render_window;
-use wavefront::{wavefront_obj::WavefrontObj, wavefront_obj_source::WaveFrontObjSource};
+    // Load model
+    let obj_path = assets_dir.join("obj.obj");
+    let input = BufReader::new(File::open(obj_path).unwrap());
+    let model: Obj<TexturedVertex> = load_obj(input).unwrap();
+    let model = Arc::new(model);
 
-const BUFFER_WIDTH: usize = 1000;
-const BUFFER_HEIGHT: usize = 1000;
-const Z_BUFFER_SIZE: f32 = 255.0;
+    // Load texture
+    let texture_path = assets_dir.join("diffuse.tga");
+    let mut texture = image::open(texture_path)
+        .expect("Opening image failed")
+        .into_rgba8();
+    image::imageops::flip_vertical_in_place(&mut texture);
 
-const MODEL: WaveFrontObjSource = WaveFrontObjSource::new(
-    "./resources/taru.obj",
-    "./resources/taru_Diffuse.tga",
-    None,
-    None,
-    None,
-);
+    // Load normal map
+    let normal_map_path = assets_dir.join("tangent.tga");
+    let mut normal_map = image::open(normal_map_path)
+        .expect("Opening image failed")
+        .into_rgba8();
+    image::imageops::flip_vertical_in_place(&mut normal_map);
 
-fn main() -> Result<(), String> {
-    let wavefront = WavefrontObj::from_sources_struct(&MODEL)?;
+    // Load specular map
+    let specular_map_path = assets_dir.join("spec.tga");
+    let mut specular_map = image::open(specular_map_path)
+        .expect("Opening image failed")
+        .into_rgba8();
+    image::imageops::flip_vertical_in_place(&mut specular_map);
 
-    open_render_window(
-        BUFFER_WIDTH,
-        BUFFER_HEIGHT,
-        Z_BUFFER_SIZE,
-        vec![wavefront.into()],
-    );
+    let model_filter = warp::any().map(move || Arc::clone(&model));
+    let texture_filter = warp::any().map(move || texture.clone());
+    let normal_map_filter = warp::any().map(move || normal_map.clone());
+    let specular_map_filter = warp::any().map(move || specular_map.clone());
 
-    Ok(())
+    let index = warp::path::end()
+        .and(model_filter)
+        .and(texture_filter)
+        .and(normal_map_filter)
+        .and(specular_map_filter)
+        .and_then(serve_captcha);
+
+    warp::serve(index).run(([127, 0, 0, 1], 3030)).await;
+}
+
+async fn serve_captcha(
+    model: Arc<Obj<TexturedVertex>>,
+    texture: ImageBuffer<Rgba<u8>, Vec<u8>>,
+    normal_map: ImageBuffer<Rgba<u8>, Vec<u8>>,
+    specular_map: ImageBuffer<Rgba<u8>, Vec<u8>>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    // Render
+    let color_buffer = render(model, texture, normal_map, specular_map);
+
+    // Convert the image to PNG bytes
+    let mut buf = std::io::Cursor::new(Vec::new());
+    color_buffer
+        .write_to(&mut buf, image::ImageFormat::Png)
+        .unwrap();
+
+    // Return the PNG bytes as a response
+    Ok(warp::reply::with_header(
+        buf.into_inner(),
+        "Content-Type",
+        "image/png",
+    ))
 }
