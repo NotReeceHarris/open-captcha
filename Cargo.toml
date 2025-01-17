@@ -1,0 +1,15 @@
+[package]
+name = "open-captcha"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+warp = "0.3"
+tokio = { version = "1", features = ["full"] }
+minifb = "0.23"
+rand = "0.8.5"
+thiserror = "1.0.32"
+num = "0.4.0"
+image = "0.23.12"
+glam = "0.21.3"
+derive_builder = "0.11.2"
