@@ -8,10 +8,18 @@ pub trait Shader {
 }
 
 fn sample_2d(texture: &RgbaImage, uv: Point2<f32>) -> Rgba<u8> {
-    *texture.get_pixel(
+    #[cfg(debug_assertions)]
+    let perf = std::time::Instant::now();
+
+    let out = *texture.get_pixel(
         ((uv.x * texture.width() as f32) - 1.) as u32,
         ((uv.y * texture.height() as f32) - 1.) as u32,
-    )
+    );
+
+    #[cfg(debug_assertions)]
+    println!("Sample 2D time: {:?}", perf.elapsed());
+
+    out
 }
 
 pub struct RenderingShader<'a> {
@@ -60,6 +68,7 @@ impl Shader for RenderingShader<'_> {
             .set_column(nthvert, &gl_position.xyz().coords);
         *gl_position = Point4::from(self.uniform_viewport * self.uniform_projection * mv_coords);
     }
+
     fn fragment_shader(&self, bar_coords: Vector3<f32>) -> Option<Rgba<u8>> {
         // Texture coords
         let uv = Point2::<f32>::from(self.varying_uv * bar_coords);
@@ -124,11 +133,12 @@ impl Shader for RenderingShader<'_> {
         gl_frag_color.apply_without_alpha(|ch| {
             (self.uniform_ambient_light + (ch as f32) * shadow * (diffuse + 0.6 * specular)) as u8
         });
+
         Some(gl_frag_color)
     }
 }
 
-pub struct ShadowShader<'a> {
+/* pub struct ShadowShader<'a> {
     pub model: &'a Obj<TexturedVertex>,
     pub uniform_shadow_mv_mat: Matrix4<f32>,
     pub uniform_viewport: Matrix4<f32>,
@@ -148,4 +158,4 @@ impl Shader for ShadowShader<'_> {
     fn fragment_shader(&self, _bar_coords: Vector3<f32>) -> Option<Rgba<u8>> {
         None
     }
-}
+}*/

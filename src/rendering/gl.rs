@@ -38,6 +38,7 @@ pub fn get_viewport_matrix(screen_width: f32, screen_height: f32, depth: f32) ->
     let half_w = (screen_width - 1.) / 2.;
     let half_h = (screen_height - 1.) / 2.;
     let half_d = (depth - 1.) / 2.;
+
     Matrix4::<f32>::from_rows(&[
         RowVector4::new(half_w, 0., 0., half_w),
         RowVector4::new(0., half_h, 0., half_h),

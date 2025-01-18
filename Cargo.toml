@@ -1,5 +1,5 @@
 [package]
-name = "open-captcha"
+name = "open_captcha"
 version = "0.0.0"
 description = "Rust implementation of Tiny Renderer"
 authors = ["Reece Harris <me@reeceharris.net>", "Emmanuel Bustos <ema2159@gmail.com>"]
@@ -11,6 +11,5 @@ tokio = { version = "1", features = ["full"] }
 image = "0.25.5"
 obj-rs = "0.7.4"
 nalgebra = "0.33.2"
-rayon = "1.8"
-parking_lot = "0.12"
-wide = "0.7.32"
+cgmath = "0.18.0"
+rand = "0.8.5"
