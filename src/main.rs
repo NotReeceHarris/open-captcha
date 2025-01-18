@@ -20,8 +20,8 @@ async fn main() {
 
     let assets = [
         "assets/barrel",
-        "assets/head",
-        "assets/devil",
+        /* "assets/head",
+        "assets/devil" */
     ].iter().map(|dir| {
 
         let assets_dir = Path::new(dir)
@@ -78,10 +78,18 @@ async fn serve_captcha(
     // select a random model
     let (model, texture, normal_map, specular_map) = assets.choose(&mut rand::thread_rng()).unwrap();
 
-
     // Render
     let perf_render = std::time::Instant::now();
-    let color_buffer = rendering::render(model.clone(), texture.clone(), normal_map.clone(), specular_map.clone());
+    let color_buffer = rendering::render(
+        model.clone(), 
+        texture.clone(), 
+        normal_map.clone(), 
+        specular_map.clone(),
+
+        0.0, 0.0, 0.0,
+
+        0.0, 0.5, 0.0,
+    );
     println!("Render time: {:?} \n----", perf_render.elapsed());
 
     // Convert the image to PNG bytes

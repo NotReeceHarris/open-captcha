@@ -23,6 +23,15 @@ pub fn render(
     texture: ImageBuffer<Rgba<u8>, Vec<u8>>,
     normal_map: ImageBuffer<Rgba<u8>, Vec<u8>>,
     specular_map: ImageBuffer<Rgba<u8>, Vec<u8>>,
+
+    x: f32,
+    y: f32,
+    z: f32,
+
+    rot_x: f32,
+    rot_y: f32,
+    rot_z: f32,
+
 ) -> RgbaImage {
 
     // Create buffers for colour and z values
@@ -43,9 +52,9 @@ pub fn render(
     let model_view = get_model_view_matrix(
         camera.position,
         camera.view_point,
-        Point3::origin(),
+        Point3::new(x, y, z),
         Vector3::new(1.0, 1.0, 1.0),
-        Vector3::new(0.0, 1.0, 0.0),
+        Vector3::new(rot_x, rot_y, rot_z),
     );
     let projection = get_projection_matrix(camera.focal_length);
     let viewport = get_viewport_matrix(HEIGHT as f32, WIDTH as f32, 1024.0);
