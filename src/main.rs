@@ -1,4 +1,6 @@
 mod rendering;
+mod background;
+mod filters;
 
 use warp::Filter;
 use image::{ImageBuffer, Rgba};
@@ -73,31 +75,41 @@ async fn serve_captcha(
     assets: Vec<(Arc<Obj<TexturedVertex>>, ImageBuffer<Rgba<u8>, Vec<u8>>, ImageBuffer<Rgba<u8>, Vec<u8>>, ImageBuffer<Rgba<u8>, Vec<u8>>)>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
 
-    #[cfg(debug_assertions)]
-    let perf_select = std::time::Instant::now();
-    
     // select a random model
     let (model, texture, normal_map, specular_map) = assets.choose(&mut rand::thread_rng()).unwrap();
-    println!("Select time: {:?}", perf_select.elapsed());
 
 
     // Render
     let perf_render = std::time::Instant::now();
     let color_buffer = rendering::render(model.clone(), texture.clone(), normal_map.clone(), specular_map.clone());
-
-    #[cfg(debug_assertions)]
     println!("Render time: {:?} \n----", perf_render.elapsed());
 
     // Convert the image to PNG bytes
-    let mut buf = std::io::Cursor::new(Vec::new());
+    let mut render_buf = std::io::Cursor::new(Vec::new());
     color_buffer
-        .write_to(&mut buf, image::ImageFormat::Png)
+        .write_to(&mut render_buf, image::ImageFormat::Png)
         .unwrap();
+
+    // Generate a random background
+    let bg = background::generate(200, 200);
+
+    // layer the background and the rendered image
+    let mut bg_img = image::load_from_memory(&bg).unwrap().to_rgba8();
+    image::imageops::overlay(&mut bg_img, &color_buffer, 0, 0);
+
+    // Convert the image to PNG bytes
+    let mut frame_image = std::io::Cursor::new(Vec::new());
+    bg_img
+        .write_to(&mut frame_image, image::ImageFormat::Png)
+        .unwrap();
+
+    let epsilon = 0.05; // Small perturbation
+    let filtered = filters::process_adversarial_image(frame_image.clone(), epsilon);
 
     // Return the PNG bytes as a response
     Ok(
         warp::reply::with_header(
-            buf.into_inner(),
+            filtered.into_inner(),
             "content-type",
             "image/png",
         ),
